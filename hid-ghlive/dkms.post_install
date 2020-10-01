@@ -1,0 +1,10 @@
+#!/bin/sh
+
+echo "Installing modalias database..."
+install -D -t /etc/modprobe.d etc-modprobe.d/ghlive.conf
+
+echo "Installing udev rules..."
+install -D -t /etc/udev/rules.d etc-udev-rules.d/98-ghlive.rules
+
+echo "Reloading udev..."
+udevadm control --reload

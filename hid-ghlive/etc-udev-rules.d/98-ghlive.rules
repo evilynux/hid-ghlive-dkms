@@ -1,0 +1,2 @@
+ACTION=="add", KERNEL=="0003:12BA:074B.*", SUBSYSTEM=="hid", DRIVER!="ghlive", ATTR{driver/unbind}="%k", ATTR{[drivers/hid:ghlive]bind}="%k"
+ACTION=="add", DRIVERS=="ghlive", SUBSYSTEM=="input", ENV{ID_INPUT_JOYSTICK}=="1", TAG+="uaccess", MODE="0664", ENV{LIBINPUT_IGNORE_DEVICE}="1"
