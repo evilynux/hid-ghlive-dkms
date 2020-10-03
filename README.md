@@ -22,7 +22,7 @@ Easiest route is using `dkms`:
 Without `dkms`, you will require a configured kernel source tree. 
 
 ### How to Install ###
-1. Clone the git repository: `git clone https://pggit.ele.etsmtl.ca/pgiard/hid-ghlive-dkms`
+1. Clone the git repository: `git clone https://github.com/evilynux/hid-ghlive-dkms`
 2. Move to the newly created folder: `cd hid-ghlive-dkms`
 3. With `dkms`, run `sudo ./install.sh` or
 3. Without `dkms`, run `cd hid-ghlive && make modules && sudo make modules_install`
