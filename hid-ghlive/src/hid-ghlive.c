@@ -98,8 +98,8 @@ static void ghl_magic_poke(struct timer_list *t)
 			kfree(databuf);
 			kfree(cr);
 		}
-		usb_free_urb(urb);
 	}
+	usb_free_urb(urb);
 
 resched:
 	/* Reschedule for next time */
