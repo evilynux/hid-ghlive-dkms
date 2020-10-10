@@ -1,5 +1,5 @@
 /*
- *	HID driver for Activision GH Live PS3 and Wii U Guitar devices.
+ *	HID driver for Guitar Hero Live PS3 and Wii U Guitar devices.
  *
  *	Copyright (c) 2020 Pascal Giard <pascal.giard@etsmtl.ca>
  */
@@ -42,7 +42,7 @@ struct ghlive_sc {
 
 static void ghl_magic_poke_cb(struct urb *urb)
 {
-	if(urb) {
+	if (urb) {
 		/* Free cr and databuf allocated in ghl_magic_poke() */
 		kfree(urb->setup_packet);
 		kfree(urb->transfer_buffer);
@@ -52,19 +52,19 @@ static void ghl_magic_poke_cb(struct urb *urb)
 static void ghl_magic_poke(struct timer_list *t)
 {
 	struct ghlive_sc *sc = from_timer(sc, t, poke_timer);
-	
+
 	int ret;
 	unsigned int pipe;
 	struct urb *urb;
 	struct usb_ctrlrequest *cr;
 	const u16 poke_size =
-		sizeof(ghl_ps3wiiu_magic_data)/sizeof(ghl_ps3wiiu_magic_data[0]);
+		ARRAY_SIZE(ghl_ps3wiiu_magic_data);
 	u8 *databuf;
 
 	pipe = usb_sndctrlpipe(sc->usbdev, 0);
-	
+
 	cr = kzalloc(sizeof(*cr), GFP_ATOMIC);
-	if(!cr)
+	if (!cr)
 		goto resched;
 
 	databuf = kzalloc(poke_size, GFP_ATOMIC);
@@ -79,8 +79,8 @@ static void ghl_magic_poke(struct timer_list *t)
 		kfree(cr);
 		goto resched;
 	}
-	
-	if(sc->quirks & (GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU)) {
+
+	if (sc->quirks & (GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU)) {
 		cr->bRequestType =
 			USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
 		cr->bRequest = USB_REQ_SET_CONFIGURATION;
@@ -88,7 +88,7 @@ static void ghl_magic_poke(struct timer_list *t)
 		cr->wIndex = 0;
 		cr->wLength = cpu_to_le16(poke_size);
 		memcpy(databuf, ghl_ps3wiiu_magic_data, poke_size);
-		
+
 		usb_fill_control_urb(
 			urb, sc->usbdev, pipe,
 			(unsigned char *) cr, databuf, poke_size,
@@ -127,9 +127,8 @@ static int ghlive_mapping(struct hid_device *hdev, struct hid_input *hi,
 {
 	struct ghlive_sc *sc = hid_get_drvdata(hdev);
 
-	if (sc->quirks & GHL_GUITAR_CONTROLLER) {
+	if (sc->quirks & GHL_GUITAR_CONTROLLER)
 		return guitar_mapping(hdev, hi, field, usage, bit, max);
-	}
 
 	/* Let hid-core decide for the others */
 	return 0;
@@ -144,10 +143,8 @@ static int ghlive_probe(struct hid_device *hdev,
 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
 
 	sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
-	if (sc == NULL) {
-		hid_err(hdev, "can't alloc ghlive descriptor\n");
+	if (sc == NULL)
 		return -ENOMEM;
-	}
 
 	sc->quirks = quirks;
 	hid_set_drvdata(hdev, sc);
@@ -171,7 +168,7 @@ static int ghlive_probe(struct hid_device *hdev,
 		return -ENODEV;
 	}
 
-	if(sc->quirks & GHL_GUITAR_CONTROLLER) {
+	if (sc->quirks & GHL_GUITAR_CONTROLLER) {
 		sc->usbdev = to_usb_device(hdev->dev.parent->parent);
 		sc->poke_current = 0;
 		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
@@ -185,13 +182,14 @@ static int ghlive_probe(struct hid_device *hdev,
 static void ghlive_remove(struct hid_device *hdev)
 {
 	struct ghlive_sc *sc = hid_get_drvdata(hdev);
+
 	del_timer_sync(&sc->poke_timer);
 	hid_hw_close(hdev);
 	hid_hw_stop(hdev);
 }
 
 static const struct hid_device_id ghlive_devices[] = {
-	{ HID_USB_DEVICE(USB_VENDOR_ID_GHLIVE, USB_DEVICE_ID_GHLIVE_GUITAR_PS3WIIU),
+	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY_GHLIVE, USB_DEVICE_ID_SONY_PS3WIIU_GHLIVE_DONGLE),
 		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU},
 	{ }
 };
