@@ -1,7 +1,8 @@
 /*
- *	HID driver for Guitar Hero Live PS3 and Wii U Guitar devices.
+ *	HID driver for Guitar Hero Live PS3, PS4 and Wii U Guitar devices.
  *
  *	Copyright (c) 2020 Pascal Giard <pascal.giard@etsmtl.ca>
+ *	Copyright (c) 2021 Daniel Nguyen <daniel.nguyen.1@ens.etsmtl.ca>
  */
 
 #include <linux/hid.h>
@@ -15,10 +16,11 @@ MODULE_AUTHOR("Pascal Giard <pascal.giard@etsmtl.ca>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("HID driver for Activision GH Live PS3 and Wii U Guitar devices");
 
-#define GHL_GUITAR_PS3WIIU	 BIT(2)
-#define GHL_GUITAR_CONTROLLER	 BIT(1)
+#define GHL_GUITAR_PS4			BIT(3)
+#define GHL_GUITAR_PS3WIIU		BIT(2)
+#define GHL_GUITAR_CONTROLLER	BIT(1)
 
-#define GHL_GUITAR_POKE_INTERVAL 10 /* In seconds */
+#define GHL_GUITAR_POKE_INTERVAL 8 /* In seconds */
 
 #define GHL_GUITAR_TILT_USAGE 44
 
@@ -31,6 +33,11 @@ static const char ghl_ps3wiiu_magic_data[] = {
 	0x02, 0x08, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+/* PS4 magic data found through usb sniffing */
+static const char ghl_ps4_magic_data[] = {
+	0x30, 0x02, 0x08, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 struct ghlive_sc {
 	struct hid_device *hdev;
 	unsigned long quirks;
@@ -40,16 +47,24 @@ struct ghlive_sc {
 	u8 *databuf;
 };
 
-static void ghl_magic_poke_cb(struct urb *urb)
+static void ghl_magic_poke_cb_ps3wiiu(struct urb *urb)
 {
 	if (urb) {
-		/* Free sc->cr and sc->databuf allocated in ghl_magic_poke() */
+		/* Free sc->cr and sc->databuf allocated in ghl_magic_poke_ps3wiiu() */
 		kfree(urb->setup_packet);
 		kfree(urb->transfer_buffer);
 	}
 }
 
-static void ghl_magic_poke(struct timer_list *t)
+static void ghl_magic_poke_cb_ps4(struct urb *urb)
+{
+	if (urb) {
+		/* Free sc->databuf allocated in ghl_magic_poke_ps4() */
+		kfree(urb->transfer_buffer);
+	}
+}
+
+static void ghl_magic_poke_ps3wiiu(struct timer_list *t)
 {
 	int ret;
 	struct urb *urb;
@@ -87,7 +102,7 @@ static void ghl_magic_poke(struct timer_list *t)
 	usb_fill_control_urb(
 		urb, usbdev, pipe,
 		(unsigned char *) sc->cr, sc->databuf, poke_size,
-		ghl_magic_poke_cb, NULL);
+		ghl_magic_poke_cb_ps3wiiu, NULL);
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (ret < 0) {
 		kfree(sc->databuf);
@@ -99,6 +114,46 @@ resched:
 	/* Reschedule for next time */
 	mod_timer(&sc->poke_timer, jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
 }
+
+static void ghl_magic_poke_ps4(struct timer_list *t)
+{
+	int ret;
+	struct urb *urb;
+	struct ghlive_sc *sc = from_timer(sc, t, poke_timer);
+	struct usb_device *usbdev = to_usb_device(sc->hdev->dev.parent->parent);
+	const u16 poke_size =
+		ARRAY_SIZE(ghl_ps4_magic_data);
+	unsigned int pipe = usb_sndctrlpipe(usbdev, 0x02);
+
+	sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
+	if (!sc->databuf) {
+		kfree(sc->cr);
+		goto resched;
+	}
+
+	urb = usb_alloc_urb(0, GFP_ATOMIC);
+	if (!urb) {
+		kfree(sc->databuf);
+		goto resched;
+	}
+
+	memcpy(sc->databuf, ghl_ps4_magic_data, poke_size);
+
+	usb_fill_int_urb(
+		urb, usbdev, pipe,
+		sc->databuf, poke_size,
+		ghl_magic_poke_cb_ps4, NULL, 5);	/* the bInterval for the EndPoint is 5. */
+	ret = usb_submit_urb(urb, GFP_ATOMIC);
+	if (ret < 0) {
+		kfree(sc->databuf);
+	}
+	usb_free_urb(urb);
+
+resched:
+	/* Reschedule for next time */
+	mod_timer(&sc->poke_timer, jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
+}
+
 
 static int guitar_mapping(struct hid_device *hdev, struct hid_input *hi,
 			  struct hid_field *field, struct hid_usage *usage,
@@ -162,11 +217,13 @@ static int ghlive_probe(struct hid_device *hdev,
 	}
 
 	if (sc->quirks & GHL_GUITAR_PS3WIIU) {
-		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
-		mod_timer(&sc->poke_timer,
-			  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
+		timer_setup(&sc->poke_timer, ghl_magic_poke_ps3wiiu, 0);
 	}
-
+	else if (sc->quirks & GHL_GUITAR_PS4){
+		timer_setup(&sc->poke_timer, ghl_magic_poke_ps4, 0);
+	} 
+	mod_timer(&sc->poke_timer,
+		  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
 	return ret;
 }
 
@@ -182,6 +239,8 @@ static void ghlive_remove(struct hid_device *hdev)
 static const struct hid_device_id ghlive_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY_GHLIVE, USB_DEVICE_ID_SONY_PS3WIIU_GHLIVE_DONGLE),
 		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU},
+	{ HID_USB_DEVICE(USB_VENDOR_ID_REDOCTANE_GHLIVE, USB_DEVICE_ID_REDOCTANE_PS4_GHLIVE_DONGLE),
+		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS4 },
 	{ }
 };
 MODULE_DEVICE_TABLE(hid, ghlive_devices);
