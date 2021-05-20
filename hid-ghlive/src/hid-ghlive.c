@@ -59,21 +59,22 @@ static void ghl_magic_poke(struct timer_list *t)
 		ARRAY_SIZE(ghl_ps3wiiu_magic_data);
 	unsigned int pipe = usb_sndctrlpipe(usbdev, 0);
 
-	if(!sc->cr) {
-		sc->cr = kzalloc(sizeof(*sc->cr), GFP_ATOMIC);
-		if (!sc->cr)
-			goto resched;
-	}
+	sc->cr = kzalloc(sizeof(*sc->cr), GFP_ATOMIC);
+	if (!sc->cr)
+		goto resched;
 
-	if(!sc->databuf) {
-		sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
-		if (!sc->databuf)
-			goto resched;
+	sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
+	if (!sc->databuf) {
+		kfree(sc->cr);
+		goto resched;
 	}
 
 	urb = usb_alloc_urb(0, GFP_ATOMIC);
-	if (!urb)
+	if (!urb) {
+		kfree(sc->databuf);
+		kfree(sc->cr);
 		goto resched;
+	}
 
 	sc->cr->bRequestType =
 		USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
