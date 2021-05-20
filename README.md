@@ -1,6 +1,6 @@
-# HID driver for Activision GH Live PS3, PS4 and Wii U Guitar devices #
+# HID driver for Activision GH Live PS3, Wii U and PS4 Guitar devices #
 
-This driver module supports the GH Live devices for PS3, PS4 and Wii U. I really wanted to play a 6-fret guitar on [Clone Hero](https://clonehero.net/).
+This driver module supports the GH Live devices for PS3, PS4 and Wii U. This module notably allows you to play songs with the 6-fret guitar in Clone Hero with your PS3, Wii U or PS4 dongle.
 
 Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figuring out the magic control message to send to the PS3 and Wii U device. Also thanks to the authors of the [xpadneo](https://github.com/atar-axis/xpadneo) and [rtlwifi](https://github.com/rtlwifi-linux) modules, I've used their modules as examples of how to do things. *Monkey see, monkey do!*
 
