@@ -33,17 +33,17 @@ static const char ghl_ps3wiiu_magic_data[] = {
 
 struct ghlive_sc {
 	struct hid_device *hdev;
-	struct usb_device *usbdev;
 	unsigned long quirks;
 	int device_id;
-	unsigned int poke_current;
 	struct timer_list poke_timer;
+	struct usb_ctrlrequest *cr;
+	u8 *databuf;
 };
 
 static void ghl_magic_poke_cb(struct urb *urb)
 {
 	if (urb) {
-		/* Free cr and databuf allocated in ghl_magic_poke() */
+		/* Free sc->cr and sc->databuf allocated in ghl_magic_poke() */
 		kfree(urb->setup_packet);
 		kfree(urb->transfer_buffer);
 	}
@@ -51,53 +51,46 @@ static void ghl_magic_poke_cb(struct urb *urb)
 
 static void ghl_magic_poke(struct timer_list *t)
 {
-	struct ghlive_sc *sc = from_timer(sc, t, poke_timer);
-
 	int ret;
-	unsigned int pipe;
 	struct urb *urb;
-	struct usb_ctrlrequest *cr;
+	struct ghlive_sc *sc = from_timer(sc, t, poke_timer);
+	struct usb_device *usbdev = to_usb_device(sc->hdev->dev.parent->parent);
 	const u16 poke_size =
 		ARRAY_SIZE(ghl_ps3wiiu_magic_data);
-	u8 *databuf;
+	unsigned int pipe = usb_sndctrlpipe(usbdev, 0);
 
-	pipe = usb_sndctrlpipe(sc->usbdev, 0);
+	if(!sc->cr) {
+		sc->cr = kzalloc(sizeof(*sc->cr), GFP_ATOMIC);
+		if (!sc->cr)
+			goto resched;
+	}
 
-	cr = kzalloc(sizeof(*cr), GFP_ATOMIC);
-	if (!cr)
-		goto resched;
-
-	databuf = kzalloc(poke_size, GFP_ATOMIC);
-	if (!databuf) {
-		kfree(cr);
-		goto resched;
+	if(!sc->databuf) {
+		sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
+		if (!sc->databuf)
+			goto resched;
 	}
 
 	urb = usb_alloc_urb(0, GFP_ATOMIC);
-	if (!urb) {
-		kfree(databuf);
-		kfree(cr);
+	if (!urb)
 		goto resched;
-	}
 
-	if (sc->quirks & (GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU)) {
-		cr->bRequestType =
-			USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
-		cr->bRequest = USB_REQ_SET_CONFIGURATION;
-		cr->wValue = cpu_to_le16(ghl_ps3wiiu_magic_value);
-		cr->wIndex = 0;
-		cr->wLength = cpu_to_le16(poke_size);
-		memcpy(databuf, ghl_ps3wiiu_magic_data, poke_size);
+	sc->cr->bRequestType =
+		USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
+	sc->cr->bRequest = USB_REQ_SET_CONFIGURATION;
+	sc->cr->wValue = cpu_to_le16(ghl_ps3wiiu_magic_value);
+	sc->cr->wIndex = 0;
+	sc->cr->wLength = cpu_to_le16(poke_size);
+	memcpy(sc->databuf, ghl_ps3wiiu_magic_data, poke_size);
 
-		usb_fill_control_urb(
-			urb, sc->usbdev, pipe,
-			(unsigned char *) cr, databuf, poke_size,
-			ghl_magic_poke_cb, NULL);
-		ret = usb_submit_urb(urb, GFP_ATOMIC);
-		if (ret < 0) {
-			kfree(databuf);
-			kfree(cr);
-		}
+	usb_fill_control_urb(
+		urb, usbdev, pipe,
+		(unsigned char *) sc->cr, sc->databuf, poke_size,
+		ghl_magic_poke_cb, NULL);
+	ret = usb_submit_urb(urb, GFP_ATOMIC);
+	if (ret < 0) {
+		kfree(sc->databuf);
+		kfree(sc->cr);
 	}
 	usb_free_urb(urb);
 
@@ -138,7 +131,6 @@ static int ghlive_probe(struct hid_device *hdev,
 			    const struct hid_device_id *id)
 {
 	int ret;
-	unsigned long quirks = id->driver_data;
 	struct ghlive_sc *sc;
 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
 
@@ -146,7 +138,7 @@ static int ghlive_probe(struct hid_device *hdev,
 	if (sc == NULL)
 		return -ENOMEM;
 
-	sc->quirks = quirks;
+	sc->quirks = id->driver_data;
 	hid_set_drvdata(hdev, sc);
 	sc->hdev = hdev;
 
@@ -168,9 +160,7 @@ static int ghlive_probe(struct hid_device *hdev,
 		return -ENODEV;
 	}
 
-	if (sc->quirks & GHL_GUITAR_CONTROLLER) {
-		sc->usbdev = to_usb_device(hdev->dev.parent->parent);
-		sc->poke_current = 0;
+	if (sc->quirks & GHL_GUITAR_PS3WIIU) {
 		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
 		mod_timer(&sc->poke_timer,
 			  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
