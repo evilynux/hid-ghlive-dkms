@@ -1,5 +1,5 @@
 /*
- *	HID driver for Guitar Hero Live PS3, Wii U and PS4 Guitar devices.
+ *	HID driver for Guitar Hero Live PS3, Wii U, and PS4 Guitar devices.
  *
  *	Copyright (c) 2020 Pascal Giard <pascal.giard@etsmtl.ca>
  *	Copyright (c) 2021 Daniel Nguyen <daniel.nguyen.1@ens.etsmtl.ca>
@@ -14,7 +14,7 @@
 
 MODULE_AUTHOR("Pascal Giard <pascal.giard@etsmtl.ca>");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("HID driver for Activision GH Live PS3, Wii U and PS4 Guitar devices");
+MODULE_DESCRIPTION("HID driver for Activision GH Live PS3, Wii U, and PS4 Guitar devices");
 
 #define GHL_GUITAR_PS4			BIT(3)
 #define GHL_GUITAR_PS3WIIU		BIT(2)
