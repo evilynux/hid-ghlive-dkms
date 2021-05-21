@@ -1,6 +1,6 @@
 # HID driver for Activision GH Live PS3, Wii U, and PS4 Guitar devices #
 
-This driver module supports the GH Live devices for PS3, Wii U, and PS4. This module notably allows you to play songs with the 6-fret guitar in Clone Hero with your PS3, Wii U or PS4 dongle.
+This driver module supports the GH Live devices for PS3, Wii U, and PS4. This module notably allows you to play songs with the 6-fret guitar in Clone Hero with your PS3, Wii U, or PS4 dongle.
 
 Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figuring out the magic control message to send to the PS3 and Wii U device. Also thanks to the authors of the [xpadneo](https://github.com/atar-axis/xpadneo) and [rtlwifi](https://github.com/rtlwifi-linux) modules, I've used their modules as examples of how to do things. *Monkey see, monkey do!*
 
@@ -31,7 +31,7 @@ Without `dkms`, you will require a configured kernel source tree.
 ### How to Update ###
 1. Move to the cloned-repository folder
 2. Update the cloned repository: `git pull`
-3. With `dkms`, run `sudo ./uninstall.sh` followed by `sudo ./install.sh`or
+3. With `dkms`, run `sudo ./uninstall.sh && sudo ./install.sh`or
 4. Without `dkms`, run `cd hid-ghlive && make reinstall`
 
 ### How to Uninstall ###

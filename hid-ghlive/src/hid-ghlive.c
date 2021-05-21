@@ -123,7 +123,7 @@ static void ghl_magic_poke_ps4(struct timer_list *t)
 	struct usb_device *usbdev = to_usb_device(sc->hdev->dev.parent->parent);
 	const u16 poke_size =
 		ARRAY_SIZE(ghl_ps4_magic_data);
-	unsigned int pipe = usb_sndctrlpipe(usbdev, 0x02);
+	unsigned int pipe = usb_sndintpipe(usbdev, 0x02);
 
 	sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
 	if (!sc->databuf) {
