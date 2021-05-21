@@ -1,6 +1,6 @@
-# HID driver for Activision GH Live PS3 and Wii U Guitar devices #
+# HID driver for Activision GH Live PS3, Wii U, and PS4 Guitar devices #
 
-As far as I know this is the first module for the GH Live PS3 and Wii U Guitar devices. I really wanted to play a 6-fret guitar on [Clone Hero](https://clonehero.net/). I could not figure how to get my PS4 dongles to cooperate (yet), but thankfuly it's a different matter for the Wii U ones. Furthermore, the PS3 dongles happen to be exactly the same as the Wii U ones, so this driver supports those as well.
+This driver module supports the GH Live devices for PS3, Wii U, and PS4. This module notably allows you to play songs with the 6-fret guitar in Clone Hero with your PS3, Wii U, or PS4 dongle.
 
 Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figuring out the magic control message to send to the PS3 and Wii U device. Also thanks to the authors of the [xpadneo](https://github.com/atar-axis/xpadneo) and [rtlwifi](https://github.com/rtlwifi-linux) modules, I've used their modules as examples of how to do things. *Monkey see, monkey do!*
 
@@ -25,14 +25,14 @@ Without `dkms`, you will require a configured kernel source tree.
 1. Clone the git repository: `git clone https://github.com/evilynux/hid-ghlive-dkms`
 2. Move to the newly created folder: `cd hid-ghlive-dkms`
 3. With `dkms`, run `sudo ./install.sh` or
-3. Without `dkms`, run `cd hid-ghlive && make modules && sudo make modules_install`
+4. Without `dkms`, run `cd hid-ghlive && make modules && sudo make modules_install`
 5. Done!
 
 ### How to Update ###
 1. Move to the cloned-repository folder
 2. Update the cloned repository: `git pull`
-3. With `dkms`, run `sudo ./install.sh` or
-3. Without `dkms`, run `cd hid-ghlive && make reinstall`
+3. With `dkms`, run `sudo ./uninstall.sh && sudo ./install.sh`or
+4. Without `dkms`, run `cd hid-ghlive && make reinstall`
 
 ### How to Uninstall ###
 1. Move to the cloned-repository folder
