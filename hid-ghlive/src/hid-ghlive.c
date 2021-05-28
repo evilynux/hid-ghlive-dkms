@@ -44,6 +44,7 @@ struct ghlive_sc {
 	int device_id;
 	struct timer_list poke_timer;
 	struct usb_ctrlrequest *cr;
+	struct usb_endpoint_descriptor *ep_irq_out;
 	u8 *databuf;
 };
 
@@ -123,7 +124,7 @@ static void ghl_magic_poke_ps4(struct timer_list *t)
 	struct usb_device *usbdev = to_usb_device(sc->hdev->dev.parent->parent);
 	const u16 poke_size =
 		ARRAY_SIZE(ghl_ps4_magic_data);
-	unsigned int pipe = usb_sndintpipe(usbdev, 0x02);
+	unsigned int pipe = usb_sndintpipe(usbdev, sc->ep_irq_out->bEndpointAddress);
 
 	sc->databuf = kzalloc(poke_size, GFP_ATOMIC);
 	if (!sc->databuf) {
@@ -142,7 +143,7 @@ static void ghl_magic_poke_ps4(struct timer_list *t)
 	usb_fill_int_urb(
 		urb, usbdev, pipe,
 		sc->databuf, poke_size,
-		ghl_magic_poke_cb_ps4, NULL, 5);	/* the bInterval for the EndPoint is 5. */
+		ghl_magic_poke_cb_ps4, NULL, sc->ep_irq_out->bInterval);
 	ret = usb_submit_urb(urb, GFP_ATOMIC);
 	if (ret < 0) {
 		kfree(sc->databuf);
@@ -186,10 +187,10 @@ static int ghlive_mapping(struct hid_device *hdev, struct hid_input *hi,
 static int ghlive_probe(struct hid_device *hdev,
 			    const struct hid_device_id *id)
 {
-	int ret;
+	int ret, i;
 	struct ghlive_sc *sc;
 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
-
+	
 	sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
 	if (sc == NULL)
 		return -ENOMEM;
@@ -197,6 +198,7 @@ static int ghlive_probe(struct hid_device *hdev,
 	sc->quirks = id->driver_data;
 	hid_set_drvdata(hdev, sc);
 	sc->hdev = hdev;
+	sc->ep_irq_out = NULL;
 
 	ret = hid_parse(hdev);
 	if (ret) {
@@ -220,8 +222,23 @@ static int ghlive_probe(struct hid_device *hdev,
 		timer_setup(&sc->poke_timer, ghl_magic_poke_ps3wiiu, 0);
 	}
 	else if (sc->quirks & GHL_GUITAR_PS4){
+		
+		struct usb_interface *intf = to_usb_interface(sc->hdev->dev.parent);
+
+		if (intf->cur_altsetting->desc.bNumEndpoints != 2)
+		return -ENODEV;
+				
+		for (i = 0; i < 2; i++) {
+			struct usb_endpoint_descriptor *ep =
+					&intf->cur_altsetting->endpoint[i].desc;
+	
+			if (usb_endpoint_xfer_int(ep)) {
+				if (!usb_endpoint_dir_in(ep))
+					sc->ep_irq_out = ep;
+			}
+		}
 		timer_setup(&sc->poke_timer, ghl_magic_poke_ps4, 0);
-	} 
+	}
 	mod_timer(&sc->poke_timer,
 		  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
 	return ret;
