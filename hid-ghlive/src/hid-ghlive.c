@@ -228,12 +228,12 @@ static int ghlive_probe(struct hid_device *hdev,
 		if (intf->cur_altsetting->desc.bNumEndpoints != 2)
 		return -ENODEV;
 				
-		for (i = 0; i < 2; i++) {
+		for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; i++) {
 			struct usb_endpoint_descriptor *ep =
 					&intf->cur_altsetting->endpoint[i].desc;
 	
 			if (usb_endpoint_xfer_int(ep)) {
-				if (!usb_endpoint_dir_in(ep))
+				if (usb_endpoint_dir_out(ep))
 					sc->ep_irq_out = ep;
 			}
 		}

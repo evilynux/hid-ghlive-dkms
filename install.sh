@@ -1,5 +1,5 @@
 #!/bin/bash -e
-VERSION=1.0
+VERSION=1.1
 MODULE=hid-ghlive
 DESTDIR="/usr/src/${MODULE}-${VERSION}"
 
