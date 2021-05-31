@@ -189,8 +189,10 @@ static int ghlive_probe(struct hid_device *hdev,
 {
 	int ret, i;
 	struct ghlive_sc *sc;
+	struct usb_interface *intf;
+	struct usb_endpoint_descriptor *ep;
 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
-	
+		
 	sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
 	if (sc == NULL)
 		return -ENOMEM;
@@ -199,7 +201,7 @@ static int ghlive_probe(struct hid_device *hdev,
 	hid_set_drvdata(hdev, sc);
 	sc->hdev = hdev;
 	sc->ep_irq_out = NULL;
-
+	
 	ret = hid_parse(hdev);
 	if (ret) {
 		hid_err(hdev, "parse failed\n");
@@ -222,15 +224,12 @@ static int ghlive_probe(struct hid_device *hdev,
 		timer_setup(&sc->poke_timer, ghl_magic_poke_ps3wiiu, 0);
 	}
 	else if (sc->quirks & GHL_GUITAR_PS4){
-		
-		struct usb_interface *intf = to_usb_interface(sc->hdev->dev.parent);
-
+		intf = to_usb_interface(sc->hdev->dev.parent);
 		if (intf->cur_altsetting->desc.bNumEndpoints != 2)
 		return -ENODEV;
 				
 		for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; i++) {
-			struct usb_endpoint_descriptor *ep =
-					&intf->cur_altsetting->endpoint[i].desc;
+			ep = &intf->cur_altsetting->endpoint[i].desc;
 	
 			if (usb_endpoint_xfer_int(ep)) {
 				if (usb_endpoint_dir_out(ep))
