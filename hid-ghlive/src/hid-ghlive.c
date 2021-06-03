@@ -65,7 +65,7 @@ static void ghl_magic_poke(struct timer_list *t)
 		hid_err(sc->hdev, "usb_submit_urb failed: %d", ret);
 }
 
-static int ghl_ps3wiiu_tx(struct ghlive_sc *sc, struct usb_device *usbdev)
+static int ghl_init_urb_ps3wiiu(struct ghlive_sc *sc, struct usb_device *usbdev)
 {
 	struct usb_ctrlrequest *cr;
 	u16 poke_size;
@@ -97,7 +97,7 @@ static int ghl_ps3wiiu_tx(struct ghlive_sc *sc, struct usb_device *usbdev)
 	return 0;
 }
 
-static int ghl_ps4_tx(struct ghlive_sc *sc, struct usb_device *usbdev)
+static int ghl_init_urb_ps4(struct ghlive_sc *sc, struct usb_device *usbdev)
 {
 	int i;
 	struct usb_interface *intf;
@@ -204,9 +204,9 @@ static int ghlive_probe(struct hid_device *hdev,
 		return -ENOMEM;
 
 	if (sc->quirks & GHL_GUITAR_PS3WIIU)
-		ret = ghl_ps3wiiu_tx(sc, usbdev);
+		ret = ghl_init_urb_ps3wiiu(sc, usbdev);
 	else if (sc->quirks & GHL_GUITAR_PS4)
-		ret = ghl_ps4_tx(sc, usbdev);
+		ret = ghl_init_urb_ps4(sc, usbdev);
 	if (ret) {
 		hid_err(hdev, "error preparing URB\n");
 		return ret;
