@@ -41,7 +41,6 @@ static const char ghl_ps4_magic_data[] = {
 struct ghlive_sc {
 	struct hid_device *hdev;
 	unsigned long quirks;
-	int device_id; /* What is this for? */
 	struct urb *urb;
 	struct timer_list poke_timer;
 };
@@ -208,12 +207,11 @@ static int ghlive_probe(struct hid_device *hdev,
 		ret = ghl_ps3wiiu_tx(sc, usbdev);
 	else if (sc->quirks & GHL_GUITAR_PS4)
 		ret = ghl_ps4_tx(sc, usbdev);
-	
 	if (ret) {
 		hid_err(hdev, "error preparing URB\n");
 		return ret;
 	}
-	
+
 	timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
 	mod_timer(&sc->poke_timer,
 		  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
