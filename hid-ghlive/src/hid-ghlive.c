@@ -50,6 +50,9 @@ static void ghl_magic_poke_cb(struct urb *urb)
 {
 	struct ghlive_sc *sc = urb->context;
 
+	if (urb->status < 0)
+		hid_err(sc->hdev, "URB transfer failed : %d", urb->status);
+
 	mod_timer(&sc->poke_timer, jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
 }
 
@@ -137,7 +140,6 @@ static int ghlive_probe(struct hid_device *hdev,
 		return -ENOMEM;
 
 	if (sc->quirks & GHL_GUITAR_PS3WIIU) {
-
 		poke_size = ARRAY_SIZE(ghl_ps3wiiu_magic_data);
 		pipe = usb_sndctrlpipe(usbdev, 0);
 
@@ -164,7 +166,6 @@ static int ghlive_probe(struct hid_device *hdev,
 
 		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
 	} else if (sc->quirks & GHL_GUITAR_PS4) {
-
 		intf = to_usb_interface(sc->hdev->dev.parent);
 		if (intf->cur_altsetting->desc.bNumEndpoints != 2)
 			return -ENODEV;
