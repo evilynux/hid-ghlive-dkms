@@ -168,15 +168,10 @@ static int ghlive_mapping(struct hid_device *hdev, struct hid_input *hi,
 static int ghlive_probe(struct hid_device *hdev,
 			    const struct hid_device_id *id)
 {
-	int ret, i;
+	int ret;
 	struct ghlive_sc *sc;
-	struct usb_interface *intf;
-	struct usb_endpoint_descriptor *ep;
 	struct usb_device *usbdev;
-	u16 poke_size;
-	u8 *databuf;
-	unsigned int pipe, connect_mask = HID_CONNECT_DEFAULT;
-	struct usb_endpoint_descriptor *ep_irq_out = NULL;
+	unsigned int connect_mask = HID_CONNECT_DEFAULT;
 
 	sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
 	if (sc == NULL)
