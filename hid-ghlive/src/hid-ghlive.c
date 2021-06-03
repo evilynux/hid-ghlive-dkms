@@ -66,6 +66,77 @@ static void ghl_magic_poke(struct timer_list *t)
 		hid_err(sc->hdev, "usb_submit_urb failed: %d", ret);
 }
 
+static int ghl_ps3wiiu_tx(struct ghlive_sc *sc, struct usb_device *usbdev)
+{
+	struct usb_ctrlrequest *cr;
+	u16 poke_size;
+	u8 *databuf;
+	unsigned int pipe;
+
+	poke_size = ARRAY_SIZE(ghl_ps3wiiu_magic_data);
+	pipe = usb_sndctrlpipe(usbdev, 0);
+
+	cr = devm_kzalloc(&sc->hdev->dev, sizeof(*cr), GFP_ATOMIC);
+	if (cr == NULL)
+		return -ENOMEM;
+
+	databuf = devm_kzalloc(&sc->hdev->dev, poke_size, GFP_ATOMIC);
+	if (databuf == NULL)
+		return -ENOMEM;
+
+	cr->bRequestType =
+		USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
+	cr->bRequest = USB_REQ_SET_CONFIGURATION;
+	cr->wValue = cpu_to_le16(ghl_ps3wiiu_magic_value);
+	cr->wIndex = 0;
+	cr->wLength = cpu_to_le16(poke_size);
+	memcpy(databuf, ghl_ps3wiiu_magic_data, poke_size);
+	usb_fill_control_urb(
+		sc->urb, usbdev, pipe,
+		(unsigned char *) cr, databuf, poke_size,
+		ghl_magic_poke_cb, sc);
+	return 0;
+}
+
+static int ghl_ps4_tx(struct ghlive_sc *sc, struct usb_device *usbdev)
+{
+	int i;
+	struct usb_interface *intf;
+	struct usb_endpoint_descriptor *ep;
+	u16 poke_size;
+	u8 *databuf;
+	unsigned int pipe;
+	struct usb_endpoint_descriptor *ep_irq_out = NULL;
+
+	intf = to_usb_interface(sc->hdev->dev.parent);
+	if (intf->cur_altsetting->desc.bNumEndpoints != 2)
+		return -ENODEV;
+
+	for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; i++) {
+		ep = &intf->cur_altsetting->endpoint[i].desc;
+
+		if (usb_endpoint_xfer_int(ep)) {
+			if (usb_endpoint_dir_out(ep))
+				ep_irq_out = ep;
+		}
+	}
+
+	poke_size = ARRAY_SIZE(ghl_ps4_magic_data);
+	pipe = usb_sndintpipe(usbdev, ep_irq_out->bEndpointAddress);
+
+	databuf = devm_kzalloc(&sc->hdev->dev, poke_size, GFP_ATOMIC);
+	if (databuf == NULL)
+		return -ENOMEM;
+
+	memcpy(databuf, ghl_ps4_magic_data, poke_size);
+
+	usb_fill_int_urb(
+		sc->urb, usbdev, pipe,
+		databuf, poke_size,
+		ghl_magic_poke_cb, sc, ep_irq_out->bInterval);
+	return 0;
+}
+
 static int guitar_mapping(struct hid_device *hdev, struct hid_input *hi,
 			  struct hid_field *field, struct hid_usage *usage,
 			  unsigned long **bit, int *max)
@@ -102,7 +173,6 @@ static int ghlive_probe(struct hid_device *hdev,
 	struct usb_interface *intf;
 	struct usb_endpoint_descriptor *ep;
 	struct usb_device *usbdev;
-	struct usb_ctrlrequest *cr;
 	u16 poke_size;
 	u8 *databuf;
 	unsigned int pipe, connect_mask = HID_CONNECT_DEFAULT;
@@ -139,61 +209,17 @@ static int ghlive_probe(struct hid_device *hdev,
 	if (!sc->urb)
 		return -ENOMEM;
 
-	if (sc->quirks & GHL_GUITAR_PS3WIIU) {
-		poke_size = ARRAY_SIZE(ghl_ps3wiiu_magic_data);
-		pipe = usb_sndctrlpipe(usbdev, 0);
-
-		cr = devm_kzalloc(&hdev->dev, sizeof(*cr), GFP_ATOMIC);
-		if (cr == NULL)
-			return -ENOMEM;
-
-		databuf = devm_kzalloc(&hdev->dev, poke_size, GFP_ATOMIC);
-		if (databuf == NULL)
-			return -ENOMEM;
-
-		cr->bRequestType =
-			USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT;
-		cr->bRequest = USB_REQ_SET_CONFIGURATION;
-		cr->wValue = cpu_to_le16(ghl_ps3wiiu_magic_value);
-		cr->wIndex = 0;
-		cr->wLength = cpu_to_le16(poke_size);
-		memcpy(databuf, ghl_ps3wiiu_magic_data, poke_size);
-
-		usb_fill_control_urb(
-			sc->urb, usbdev, pipe,
-			(unsigned char *) cr, databuf, poke_size,
-			ghl_magic_poke_cb, sc);
-
-		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
-	} else if (sc->quirks & GHL_GUITAR_PS4) {
-		intf = to_usb_interface(sc->hdev->dev.parent);
-		if (intf->cur_altsetting->desc.bNumEndpoints != 2)
-			return -ENODEV;
-
-		for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; i++) {
-			ep = &intf->cur_altsetting->endpoint[i].desc;
-
-			if (usb_endpoint_xfer_int(ep)) {
-				if (usb_endpoint_dir_out(ep))
-					ep_irq_out = ep;
-			}
-		}
-
-		poke_size = ARRAY_SIZE(ghl_ps4_magic_data);
-		pipe = usb_sndintpipe(usbdev, ep_irq_out->bEndpointAddress);
-
-		databuf = devm_kzalloc(&hdev->dev, poke_size, GFP_ATOMIC);
-		if (databuf == NULL)
-			return -ENOMEM;
-
-		memcpy(databuf, ghl_ps4_magic_data, poke_size);
-
-		usb_fill_int_urb(
-			sc->urb, usbdev, pipe,
-			databuf, poke_size,
-			ghl_magic_poke_cb, sc, ep_irq_out->bInterval);
-		timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
+	if (sc->quirks & GHL_GUITAR_PS3WIIU)
+		ret = ghl_ps3wiiu_tx(sc, usbdev);
+	else if (sc->quirks & GHL_GUITAR_PS4)
+		ret = ghl_ps4_tx(sc, usbdev);
+	
+	if (ret) {
+		hid_err(hdev, "error preparing URB\n");
+		return ret;
 	}
+	
+	timer_setup(&sc->poke_timer, ghl_magic_poke, 0);
 	mod_timer(&sc->poke_timer,
 		  jiffies + GHL_GUITAR_POKE_INTERVAL*HZ);
 	return ret;
@@ -211,7 +237,7 @@ static void ghlive_remove(struct hid_device *hdev)
 
 static const struct hid_device_id ghlive_devices[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY_GHLIVE, USB_DEVICE_ID_SONY_PS3WIIU_GHLIVE_DONGLE),
-		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU},
+		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS3WIIU },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_REDOCTANE_GHLIVE, USB_DEVICE_ID_REDOCTANE_PS4_GHLIVE_DONGLE),
 		.driver_data = GHL_GUITAR_CONTROLLER | GHL_GUITAR_PS4 },
 	{ }
