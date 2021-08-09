@@ -24,7 +24,7 @@ MODULE_DESCRIPTION("HID driver for Activision GH Live PS3, Wii U, and PS4 Guitar
 
 #define GHL_GUITAR_TILT_USAGE 44
 
-/* Magic value and data taken from GHLtarUtility:
+/* Magic data taken from GHLtarUtility:
  * https://github.com/ghlre/GHLtarUtility/blob/master/PS3Guitar.cs
  * Note: The Wii U and PS3 dongles happen to share the same!
  */
