@@ -4,7 +4,8 @@ This driver module supports the GH Live devices for PS3, Wii U, and PS4. This mo
 
 Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figuring out the magic control message to send to the PS3 and Wii U device. Also thanks to the authors of the [xpadneo](https://github.com/atar-axis/xpadneo) and [rtlwifi](https://github.com/rtlwifi-linux) modules, I've used their modules as examples of how to do things. *Monkey see, monkey do!*
 
-### Related Project ###
+### Related Projects ###
+- [GHLPokeMachine](https://github.com/Octave13/GHLPokeMachine): An application for Windows 7+ that allows you to use a GH Live PS3/Wii U or PS4 dongle.
 - [GHLtar Utility](https://github.com/ghlre/GHLtarUtility): An application for MS Windows that allows you to use a GH Live PS3/Wii U dongle, or iOS Bluetooth Guitar, by emulating an Xbox 360 controller.
 
 ## Getting started ##
