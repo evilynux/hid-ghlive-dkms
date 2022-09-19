@@ -13,6 +13,7 @@ Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figurin
 
 Easiest route is using `dkms`:
 
+- On the SteamDeck, disable read-only filesystem and install prerequisites: `sudo steamos-readonly disable && sudo pacman -S dkms linux-neptune-headers`
 - On Arch and Arch-based distros (like Antergos): `sudo pacman -S dkms linux-headers`
 - On Debian-based systems (like Ubuntu): `` sudo apt install dkms linux-headers-`uname -r` ``
 - On Fedora: `` sudo dnf install dkms make kernel-devel-`uname -r` kernel-headers-`uname -r` ``
@@ -39,4 +40,6 @@ Without `dkms`, you will require a configured kernel source tree.
 1. Move to the cloned-repository folder
 2. With `dkms`, run `sudo ./uninstall.sh` or
 3. Without `dkms`, you are on your own, I can't reasonably cover all possibilities
+
+**Note:** On the SteamDeck, before uninstalling, you'll first need to make the filesystem writable with `sudo steamos-readonly disable`.
 
