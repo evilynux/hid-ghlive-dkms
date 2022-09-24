@@ -9,11 +9,18 @@ Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figurin
 - [GHLtar Utility](https://github.com/ghlre/GHLtarUtility): An application for MS Windows that allows you to use a GH Live PS3/Wii U dongle, or iOS Bluetooth Guitar, by emulating an Xbox 360 controller.
 
 ## Getting started ##
-### Prerequisites ###
+
+### Prerequisites specific to the Steam Deck ###
+
+- Disable read-only filesystem: `sudo steamos-readonly disable`
+- Initialize the `pacman` keyring: `sudo pacman-key --init`
+- Populate the keyring with the default keys: `sudo pacman-key --populate archlinux`
+
+### Common Prerequisites ###
 
 Easiest route is using `dkms`:
 
-- On the SteamDeck, disable read-only filesystem and install prerequisites: `sudo steamos-readonly disable && sudo pacman -S dkms linux-neptune-headers`
+- On the SteamDeck: `sudo pacman -S dkms linux-neptune-headers`
 - On Arch and Arch-based distros (like Antergos): `sudo pacman -S dkms linux-headers`
 - On Debian-based systems (like Ubuntu): `` sudo apt install dkms linux-headers-`uname -r` ``
 - On Fedora: `` sudo dnf install dkms make kernel-devel-`uname -r` kernel-headers-`uname -r` ``
@@ -41,5 +48,7 @@ Without `dkms`, you will require a configured kernel source tree.
 2. With `dkms`, run `sudo ./uninstall.sh` or
 3. Without `dkms`, you are on your own, I can't reasonably cover all possibilities
 
-**Note:** On the SteamDeck, before uninstalling, you'll first need to make the filesystem writable with `sudo steamos-readonly disable`.
+### Remarks Specific to the Steam Deck ###
+- A SteamOS update will wipe out the module, i.e., you will have to reinstall the module after an update. 
+- Each time you want to make modifications, you'll first need to make the filesystem writable with `sudo steamos-readonly disable`.
 
