@@ -1,3 +1,17 @@
+# hid-ghlive-dkms #
+
+> [!IMPORTANT]
+> **This project is obsolete for most users and is no longer required on modern Linux systems.**
+>
+> Support for Activision GH Live guitar dongles has been integrated into the Linux kernel:
+>
+> * **PS3 and Wii U dongles** are supported since **Linux 5.11**
+> * **PS4 dongles** are supported since **Linux 5.15**
+>
+> If you are running a kernel version equal to or newer than those listed above, you should **not install this DKMS module**. The upstream kernel driver should provide support out of the box.
+>
+> This repository is kept available for historical reference and for users running older kernels that do not include the upstream support.
+
 # HID driver for Activision GH Live PS3, Wii U, and PS4 Guitar devices #
 
 This driver module supports the GH Live devices for PS3, Wii U, and PS4. This module notably allows you to play songs with the 6-fret guitar in Clone Hero with your PS3, Wii U, or PS4 dongle.
@@ -8,7 +22,9 @@ Many thanks to [InvoxiPlayGames](https://github.com/InvoxiPlayGames) for figurin
 - [GHLPokeMachine](https://github.com/Octave13/GHLPokeMachine): An application for Windows 7+ that allows you to use a GH Live PS3/Wii U or PS4 dongle.
 - [GHLtar Utility](https://github.com/ghlre/GHLtarUtility): An application for MS Windows that allows you to use a GH Live PS3/Wii U dongle, or iOS Bluetooth Guitar, by emulating an Xbox 360 controller.
 
-## Getting started ##
+## Legacy Installation Instructions
+
+**The instructions below are intended only for users running older Linux kernels that do not include the upstream GH Live support (Linux < 5.11 for PS3/Wii U, Linux < 5.15 for PS4).**
 
 ### Prerequisites specific to the Steam Deck ###
 
@@ -22,13 +38,13 @@ Easiest route is using `dkms`:
 
 - On the SteamDeck: `sudo pacman -S dkms linux-neptune-headers`
 - On Arch and Arch-based distros (like Antergos): `sudo pacman -S dkms linux-headers`
-- On Debian-based systems (like Ubuntu): `` sudo apt install dkms linux-headers-`uname -r` ``
-- On Fedora: `` sudo dnf install dkms make kernel-devel-`uname -r` kernel-headers-`uname -r` ``
+- On Debian-based systems (like Ubuntu): `sudo apt install dkms linux-headers-$(uname -r)`
+- On Fedora: `sudo dnf install dkms make kernel-devel-$(uname -r) kernel-headers-$(uname -r)`
 - On Manjaro: `sudo pacman -S dkms linux-latest-headers`
-- On OSMC: `` sudo apt install dkms rbp2-headers-`uname -r` sudo ln -s "/usr/src/rbp2-headers-`uname -r`" "/lib/modules/`uname -r`/build" `` (as a workaround)
+- On OSMC: `sudo apt install dkms rbp2-headers-$(uname -r)` followed by`sudo ln -s "/usr/src/rbp2-headers-$(uname -r)" "/lib/modules/$(uname -r)/build"` (as a workaround)
 - On Raspbian: `sudo apt install dkms raspberrypi-kernel-headers`
 
-Without `dkms`, you will require a configured kernel source tree. 
+Without `dkms`, you will require a configured kernel source tree.
 
 ### How to Install ###
 1. Clone the git repository: `git clone https://github.com/evilynux/hid-ghlive-dkms`
